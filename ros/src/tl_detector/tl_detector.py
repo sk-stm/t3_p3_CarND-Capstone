@@ -23,9 +23,8 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
         self.stop_line_wp_idx = -1
-        #TODO find a better value
-        self._old_dist_betw_tl_and_car = 10000000
-        self._curr_dist_car_tl = 10000000
+        self._old_dist_betw_tl_and_car = float("inf")
+        self._curr_dist_car_tl = float("inf")
         self._closest_tl_idx = 0
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -241,7 +240,6 @@ class TLDetector(object):
         light_wp_idx = self._find_waypoint_next_to_tl(car_wp_idx + i, closest_tl_idx)
         # this assumes that the traffic lights and stop lines have the same index in the array
         stop_line_wp_idx = self.find_wp_for_stopline_to_next_tl(stop_line_positions[closest_tl_idx], light_wp_idx)
-        rospy.loginfo("stop_line_wp_idx: %s; tl_wp_idx: %s", stop_line_wp_idx, light_wp_idx)
 
         return light_wp_idx, closest_tl_idx, stop_line_wp_idx
 
@@ -259,15 +257,14 @@ class TLDetector(object):
         if nearer_wp_dist < closest_tl_dist:
             # the traffic light is in front of the car
             # find waypoint near the closest traffic light ahead of the car
-            #light_wp_idx, _ = self.get_closest(self.waypoints.waypoints, self.lights[closest_tl_idx].pose.pose.position)
             light_wp_idx = self._find_waypoint_next_to_tl(car_wp_idx, closest_tl_idx)
             # this assumes that the traffic lights and stop lines have the same index in the array
             stop_line_wp_idx = self.find_wp_for_stopline_to_next_tl(stop_line_positions[closest_tl_idx], light_wp_idx)
-            rospy.loginfo("stop_line_wp_idx: %s; tl_wp_idx: %s", stop_line_wp_idx, light_wp_idx)
         else:
             # nearest traffic light is behind the car
             light_wp_idx, \
-            closest_tl_idx, stop_line_wp_idx = self._get_next_tl_along_waypoints(car_wp_idx, stop_line_positions)
+            closest_tl_idx, \
+            stop_line_wp_idx = self._get_next_tl_along_waypoints(car_wp_idx, stop_line_positions)
 
         return light_wp_idx, closest_tl_idx, stop_line_wp_idx
 
@@ -302,8 +299,6 @@ class TLDetector(object):
 
                 # regularly update distance between car an traffic light
                 self._curr_dist_car_tl = self._calc_wp_dist(self.tl_wp_idx_ahead, car_wp_idx)
-                # TODO remove
-                #rospy.loginfo("dist: %s; old_dist: %s", self._curr_dist_car_tl, self._old_dist_betw_tl_and_car)
 
                 if self._curr_dist_car_tl > self._old_dist_betw_tl_and_car:
                     # search for next traffic if the car passed the traffic light
@@ -315,8 +310,6 @@ class TLDetector(object):
                     self.stop_line_wp_idx = stop_line_wp_idx
                     # calc new distance because waypoint to traffic light changed
                     self._curr_dist_car_tl = self._calc_wp_dist(self.tl_wp_idx_ahead, car_wp_idx)
-                    # TODO remove
-                    #rospy.loginfo("dist: %s; old_dist: %s", self._curr_dist_car_tl, self._old_dist_betw_tl_and_car)
 
                 # TODO set this number somewhere else
                 if self._curr_dist_car_tl <= 50 + 25:
@@ -327,10 +320,6 @@ class TLDetector(object):
 
                 if light:
                     state = self.get_light_state(light)
-                    # TODO remove
-                    # dist_car_sl = self._calc_wp_dist(self.stop_line_wp_idx, car_wp_idx)
-                    # rospy.loginfo("car sl dist = %s; car tl dist = %s", dist_car_sl, self._curr_dist_car_tl)
-                    # rospy.loginfo("recognised tl_state = %s; stop_wp = %s, tl_wp = %s", state, self.stop_line_wp_idx, self.tl_wp_idx_ahead)
                     return self.stop_line_wp_idx, state
 
         return -1, TrafficLight.UNKNOWN

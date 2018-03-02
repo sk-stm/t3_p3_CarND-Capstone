@@ -1,7 +1,6 @@
 from pid import PID
 from yaw_controller import YawController
 from lowpass import LowPassFilter
-import rospy
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -35,19 +34,10 @@ class Controller(object):
         pass
 
     def control(self, *args, **kwargs):
-        # TODO clean up
-        # proposedlinearvelocity
-        # proposed angular velocity
-        # current linear velocity
-        # dbw status
-        # proposed steering angle
-        # any other argument you need
-
         proposed_lin_vel = args[0]
         proposed_ang_vel = args[1]
         current_lin_vel = args[2]
 
-        #final_steering_angle = self.steer_pid.step(cte, self._sample_time)
         steering_angle = self._yaw_controller.get_steering(linear_velocity=proposed_lin_vel,
                                                            angular_velocity=proposed_ang_vel,
                                                            current_velocity=current_lin_vel)
@@ -57,21 +47,13 @@ class Controller(object):
         brake = 0
         vel_error = proposed_lin_vel - current_lin_vel
         vel_cmd = self.vel_pid.step(vel_error, self._sample_time)
-        rospy.loginfo("pid control vel_cmd = %s", vel_cmd)
         if vel_cmd > 0.01:
-            # TODO use low pass filter
-            #throttle = self.throttle_pid.step(vel_error, self._sample_time)
+            # TODO maybe use low pass filter?
             throttle = min(1, vel_cmd)
             brake = 0
-            rospy.loginfo("tc accelerating!")
-            #rospy.loginfo("pid control accelerate")
         elif vel_cmd < 0:
             throttle = 0
             brake = self.mass * abs(vel_cmd) * self.r
-            rospy.loginfo("tc braking!")
-            #brake = self.brake_pid.step(-2*vel_error, self._sample_time)
-            #rospy.loginfo("pid control brake")
-
 
         # Return throttle, brake, steer
         return throttle, brake, final_steering_angle

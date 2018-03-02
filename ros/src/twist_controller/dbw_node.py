@@ -5,8 +5,6 @@ from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 
-import math
-
 from twist_controller import Controller
 
 '''
@@ -101,9 +99,6 @@ class DBWNode(object):
                                                                    self._des_ang_vel,  # proposed angular velocity
                                                                    self._current_vel_lin  # current linear velocity
                                                                    )
-
-                # TODO remove
-                rospy.loginfo("pid controll throttle: %s, brake: %s, steering: %s", throttle, brake, steering)
 
                 if self._is_dbw_enabled:
                    self.publish(throttle, brake, steering)
